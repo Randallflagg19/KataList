@@ -1,103 +1,194 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import KataCard from "@/components/KataCard";
+import AddKataForm from "@/components/AddKataForm";
+
+type Kata = {
+  id: string;
+  title: string;
+  url: string;
+  difficulty: string | null;
+  completed: boolean;
+  notes: string | null;
+  createdAt: string;
+};
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [katas, setKatas] = useState<Kata[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    fetchKatas();
+  }, []);
+
+  const fetchKatas = async () => {
+    try {
+      const response = await fetch("/api/katas");
+      const data = await response.json();
+      setKatas(data);
+    } catch (error) {
+      console.error("Failed to fetch katas:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addKata = async (kata: {
+    title: string;
+    url: string;
+    difficulty?: string;
+    notes?: string;
+  }) => {
+    try {
+      const response = await fetch("/api/katas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(kata),
+      });
+      const newKata = await response.json();
+      setKatas([newKata, ...katas]);
+    } catch (error) {
+      console.error("Failed to add kata:", error);
+    }
+  };
+
+  const toggleComplete = async (id: string, completed: boolean) => {
+    try {
+      await fetch(`/api/katas/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed }),
+      });
+      setKatas(katas.map((k) => (k.id === id ? { ...k, completed } : k)));
+    } catch (error) {
+      console.error("Failed to update kata:", error);
+    }
+  };
+
+  const deleteKata = async (id: string) => {
+    if (!confirm("Удалить эту кату?")) return;
+
+    try {
+      await fetch(`/api/katas/${id}`, { method: "DELETE" });
+      setKatas(katas.filter((k) => k.id !== id));
+    } catch (error) {
+      console.error("Failed to delete kata:", error);
+    }
+  };
+
+  const filteredKatas = katas.filter((kata) => {
+    if (filter === "active") return !kata.completed;
+    if (filter === "completed") return kata.completed;
+    return true;
+  });
+
+  const stats = {
+    total: katas.length,
+    completed: katas.filter((k) => k.completed).length,
+    active: katas.filter((k) => !k.completed).length,
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold text-gray-900 mb-2">🥋 Мои Каты</h1>
+          <p className="text-gray-600">
+            Отслеживайте свой прогресс на Codewars
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+            <div className="text-3xl font-bold text-gray-900">
+              {stats.total}
+            </div>
+            <div className="text-sm text-gray-600">Всего</div>
+          </div>
+          <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+            <div className="text-3xl font-bold text-green-600">
+              {stats.completed}
+            </div>
+            <div className="text-sm text-gray-600">Решено</div>
+          </div>
+          <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+            <div className="text-3xl font-bold text-blue-600">
+              {stats.active}
+            </div>
+            <div className="text-sm text-gray-600">В процессе</div>
+          </div>
+        </div>
+
+        {/* Filter */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              filter === "all"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Все ({stats.total})
+          </button>
+          <button
+            onClick={() => setFilter("active")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              filter === "active"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Активные ({stats.active})
+          </button>
+          <button
+            onClick={() => setFilter("completed")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              filter === "completed"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Решённые ({stats.completed})
+          </button>
+        </div>
+
+        {/* Add Kata Form */}
+        <div className="mb-6">
+          <AddKataForm onAdd={addKata} />
+        </div>
+
+        {/* Katas List */}
+        {loading ? (
+          <div className="text-center py-12 text-gray-600">Загрузка...</div>
+        ) : filteredKatas.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg">
+            <p className="text-gray-600 mb-2">
+              {filter === "all"
+                ? "Пока нет кат"
+                : `Нет ${filter === "active" ? "активных" : "решённых"} кат`}
+            </p>
+            <p className="text-sm text-gray-500">
+              Добавьте свою первую кату, чтобы начать!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredKatas.map((kata) => (
+              <KataCard
+                key={kata.id}
+                kata={kata}
+                onToggleComplete={toggleComplete}
+                onDelete={deleteKata}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
