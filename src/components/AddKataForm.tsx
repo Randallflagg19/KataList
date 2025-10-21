@@ -1,36 +1,47 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+// Схема валидации с Zod
+const kataSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Название обязательно")
+    .max(100, "Слишком длинное название"),
+  url: z.string().url("Некорректная ссылка").min(1, "Ссылка обязательна"),
+  difficulty: z.string().optional(),
+  notes: z.string().max(500, "Заметки слишком длинные").optional(),
+});
+
+type KataFormData = z.infer<typeof kataSchema>;
 
 type AddKataFormProps = {
-  onAdd: (kata: {
-    title: string;
-    url: string;
-    difficulty?: string;
-    notes?: string;
-  }) => void;
+  onAdd: (kata: KataFormData) => void;
 };
 
 export default function AddKataForm({ onAdd }: AddKataFormProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
-  const [difficulty, setDifficulty] = useState("");
-  const [notes, setNotes] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onAdd({
-      title,
-      url,
-      difficulty: difficulty || undefined,
-      notes: notes || undefined,
-    });
-    setTitle("");
-    setUrl("");
-    setDifficulty("");
-    setNotes("");
-    setIsOpen(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<KataFormData>({
+    resolver: zodResolver(kataSchema),
+  });
+
+  const onSubmit = async (data: KataFormData) => {
+    try {
+      await onAdd(data);
+      reset(); // Очищаем форму
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Failed to add kata:", error);
+    }
   };
 
   if (!isOpen) {
@@ -46,12 +57,13 @@ export default function AddKataForm({ onAdd }: AddKataFormProps) {
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       className="border border-gray-300 rounded-lg p-6 bg-white"
     >
-      <h3 className="text-xl font-semibold mb-4">Новая ката</h3>
+      <h3 className="text-xl font-semibold mb-4 text-gray-900">Новая ката</h3>
 
       <div className="space-y-4">
+        {/* Название */}
         <div>
           <label
             htmlFor="title"
@@ -62,14 +74,18 @@ export default function AddKataForm({ onAdd }: AddKataFormProps) {
           <input
             id="title"
             type="text"
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            {...register("title")}
             placeholder="Например: Sum of positive"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500 ${
+              errors.title ? "border-red-500" : "border-gray-300"
+            }`}
           />
+          {errors.title && (
+            <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+          )}
         </div>
 
+        {/* URL */}
         <div>
           <label
             htmlFor="url"
@@ -80,14 +96,18 @@ export default function AddKataForm({ onAdd }: AddKataFormProps) {
           <input
             id="url"
             type="url"
-            required
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            {...register("url")}
             placeholder="https://www.codewars.com/kata/..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500 ${
+              errors.url ? "border-red-500" : "border-gray-300"
+            }`}
           />
+          {errors.url && (
+            <p className="mt-1 text-sm text-red-600">{errors.url.message}</p>
+          )}
         </div>
 
+        {/* Сложность */}
         <div>
           <label
             htmlFor="difficulty"
@@ -97,9 +117,8 @@ export default function AddKataForm({ onAdd }: AddKataFormProps) {
           </label>
           <select
             id="difficulty"
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            {...register("difficulty")}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           >
             <option value="">Не указана</option>
             <option value="8kyu">8 kyu</option>
@@ -113,6 +132,7 @@ export default function AddKataForm({ onAdd }: AddKataFormProps) {
           </select>
         </div>
 
+        {/* Заметки */}
         <div>
           <label
             htmlFor="notes"
@@ -122,21 +142,26 @@ export default function AddKataForm({ onAdd }: AddKataFormProps) {
           </label>
           <textarea
             id="notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            {...register("notes")}
             placeholder="Ваши заметки о задаче..."
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500 ${
+              errors.notes ? "border-red-500" : "border-gray-300"
+            }`}
           />
+          {errors.notes && (
+            <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>
+          )}
         </div>
       </div>
 
       <div className="flex gap-3 mt-6">
         <button
           type="submit"
-          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          disabled={isSubmitting}
+          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Добавить
+          {isSubmitting ? "Добавляем..." : "Добавить"}
         </button>
         <button
           type="button"
