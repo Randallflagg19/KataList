@@ -30,8 +30,13 @@ jobs:
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
 
+      - name: Test database connection
+        run: pnpm exec prisma db push
+        env:
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+
       - name: Run Playwright tests
-        run: pnpm exec playwright test
+        run: pnpm exec playwright test --reporter=line
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
 
