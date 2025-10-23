@@ -30,20 +30,28 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm exec prisma generate
         env:
-          DATABASE_URL: "file:./test.db"
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
 
-      - name: Test database connection
-        run: pnpm exec prisma db push
+      - name: Setup PostgreSQL
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql version: "15"
+          postgresql db: katas_test
+          postgresql user: postgres
+          postgresql password: postgres
+
+      - name: Run database migrations
+        run: pnpm exec prisma migrate deploy
         env:
-          DATABASE_URL: "file:./test.db"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/katas_test?schema=public"
 
       - name: Run Playwright tests
         run: pnpm exec playwright test --reporter=line
         env:
-          DATABASE_URL: "file:./test.db"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/katas_test?schema=public"
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -11,13 +11,15 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
-    "test:db:reset": "DATABASE_URL=file:./test.db pnpm exec prisma db push --schema=prisma/schema.test.prisma",
-    "test:db:clean": "rm -f prisma/test.db",
-    "dev:test": "DATABASE_URL=file:./test.db pnpm exec prisma generate --schema=prisma/schema.test.prisma && DATABASE_URL=file:./test.db pnpm dev"
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@prisma/client": "^6.17.1",
+    "@prisma/client": "6.17.1",
     "next": "15.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",

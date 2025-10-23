@@ -8,9 +8,13 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(katas);
-  } catch {
+  } catch (error) {
+    console.error("Database error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch katas" },
+      {
+        error: "Failed to fetch katas",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
@@ -39,9 +43,13 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(kata, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Database error:", error);
     return NextResponse.json(
-      { error: "Failed to create kata" },
+      {
+        error: "Failed to create kata",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
