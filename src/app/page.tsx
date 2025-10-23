@@ -18,6 +18,8 @@ export default function Home() {
   const [katas, setKatas] = useState<Kata[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [selectedKatas, setSelectedKatas] = useState<Set<string>>(new Set());
+  const [bulkMode, setBulkMode] = useState(false);
 
   useEffect(() => {
     fetchKatas();
@@ -26,10 +28,23 @@ export default function Home() {
   const fetchKatas = async () => {
     try {
       const response = await fetch("/api/katas");
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
-      setKatas(data);
+
+      // Проверяем что data является массивом
+      if (Array.isArray(data)) {
+        setKatas(data);
+      } else {
+        console.error("API returned non-array data:", data);
+        setKatas([]);
+      }
     } catch (error) {
       console.error("Failed to fetch katas:", error);
+      setKatas([]); // Устанавливаем пустой массив при ошибке
     } finally {
       setLoading(false);
     }
@@ -78,16 +93,67 @@ export default function Home() {
     }
   };
 
-  const filteredKatas = katas.filter((kata) => {
-    if (filter === "active") return !kata.completed;
-    if (filter === "completed") return kata.completed;
-    return true;
-  });
+  const handleSelectKata = (id: string, selected: boolean) => {
+    const newSelected = new Set(selectedKatas);
+    if (selected) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedKatas(newSelected);
+  };
+
+  const toggleBulkMode = () => {
+    setBulkMode(!bulkMode);
+    setSelectedKatas(new Set());
+  };
+
+  const deleteSelectedKatas = async () => {
+    if (selectedKatas.size === 0) return;
+
+    const count = selectedKatas.size;
+    if (
+      !confirm(
+        `Удалить ${count} ${count === 1 ? "кату" : count < 5 ? "каты" : "кат"}?`
+      )
+    )
+      return;
+
+    try {
+      // Создаём API endpoint для массового удаления
+      const response = await fetch("/api/katas/bulk-delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedKatas) }),
+      });
+
+      if (response.ok) {
+        setKatas(katas.filter((k) => !selectedKatas.has(k.id)));
+        setSelectedKatas(new Set());
+        setBulkMode(false);
+      } else {
+        throw new Error("Failed to delete katas");
+      }
+    } catch (error) {
+      console.error("Failed to delete katas:", error);
+      alert("Ошибка при удалении кат");
+    }
+  };
+
+  const filteredKatas = Array.isArray(katas)
+    ? katas.filter((kata) => {
+        if (filter === "active") return !kata.completed;
+        if (filter === "completed") return kata.completed;
+        return true;
+      })
+    : [];
 
   const stats = {
-    total: katas.length,
-    completed: katas.filter((k) => k.completed).length,
-    active: katas.filter((k) => !k.completed).length,
+    total: Array.isArray(katas) ? katas.length : 0,
+    completed: Array.isArray(katas)
+      ? katas.filter((k) => k.completed).length
+      : 0,
+    active: Array.isArray(katas) ? katas.filter((k) => !k.completed).length : 0,
   };
 
   return (
@@ -123,38 +189,62 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Filter */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === "all"
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            Все ({stats.total})
-          </button>
-          <button
-            onClick={() => setFilter("active")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === "active"
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            Активные ({stats.active})
-          </button>
-          <button
-            onClick={() => setFilter("completed")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === "completed"
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            Решённые ({stats.completed})
-          </button>
+        {/* Filter and Bulk Actions */}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                filter === "all"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Все ({stats.total})
+            </button>
+            <button
+              onClick={() => setFilter("active")}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                filter === "active"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Активные ({stats.active})
+            </button>
+            <button
+              onClick={() => setFilter("completed")}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                filter === "completed"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Решённые ({stats.completed})
+            </button>
+          </div>
+
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={toggleBulkMode}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                bulkMode
+                  ? "bg-orange-600 text-white"
+                  : "bg-gray-600 text-white hover:bg-gray-700"
+              }`}
+            >
+              {bulkMode ? "Отменить выбор" : "Выбрать каты"}
+            </button>
+
+            {bulkMode && selectedKatas.size > 0 && (
+              <button
+                onClick={deleteSelectedKatas}
+                className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Удалить выбранные ({selectedKatas.size})
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Add Kata Form */}
@@ -184,6 +274,9 @@ export default function Home() {
                 kata={kata}
                 onToggleComplete={toggleComplete}
                 onDelete={deleteKata}
+                isSelected={selectedKatas.has(kata.id)}
+                onSelect={handleSelectKata}
+                showSelection={bulkMode}
               />
             ))}
           </div>

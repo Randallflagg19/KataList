@@ -14,6 +14,9 @@ type KataCardProps = {
   kata: Kata;
   onToggleComplete: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
+  showSelection?: boolean;
 };
 
 const difficultyColors: Record<string, string> = {
@@ -31,6 +34,9 @@ export default function KataCard({
   kata,
   onToggleComplete,
   onDelete,
+  isSelected = false,
+  onSelect,
+  showSelection = false,
 }: KataCardProps) {
   return (
     <div
@@ -43,6 +49,36 @@ export default function KataCard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
+            {showSelection && onSelect && (
+              <div className="relative flex items-center">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={(e) => onSelect(kata.id, e.target.checked)}
+                  className="w-5 h-5 rounded-full border-2 border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-2"
+                  style={{
+                    appearance: "none",
+                    background: isSelected ? "#ea580c" : "transparent",
+                    position: "relative",
+                  }}
+                />
+                {isSelected && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            )}
             <input
               type="checkbox"
               checked={kata.completed}

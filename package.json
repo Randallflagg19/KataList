@@ -10,7 +10,10 @@
     "postinstall": "prisma generate",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed"
+    "test:headed": "playwright test --headed",
+    "test:db:reset": "DATABASE_URL=file:./test.db pnpm exec prisma db push --schema=prisma/schema.test.prisma",
+    "test:db:clean": "rm -f prisma/test.db",
+    "dev:test": "DATABASE_URL=file:./test.db pnpm exec prisma generate --schema=prisma/schema.test.prisma && DATABASE_URL=file:./test.db pnpm dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -34,6 +37,7 @@
     "postcss": "^8.5.6",
     "prisma": "^6.17.1",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

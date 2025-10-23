@@ -1,6 +1,19 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Kata App", () => {
+  test.afterEach(async ({ request }) => {
+    // Очищаем БД после каждого теста
+    const response = await request.get("/api/katas");
+    const katas = await response.json();
+
+    // Удаляем все тестовые каты
+    for (const kata of katas) {
+      if (kata.title.startsWith("Test Kata ")) {
+        await request.delete(`/api/katas/${kata.id}`);
+      }
+    }
+  });
+
   test("should load the homepage", async ({ page }) => {
     await page.goto("/");
 
