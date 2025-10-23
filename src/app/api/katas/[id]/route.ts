@@ -17,7 +17,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
 
     return NextResponse.json(kata);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to update kata" },
       { status: 500 }
@@ -35,7 +35,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     });
 
     return NextResponse.json({ message: "Kata deleted" });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to delete kata" },
       { status: 500 }

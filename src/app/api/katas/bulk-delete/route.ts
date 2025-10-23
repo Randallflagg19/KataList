@@ -15,7 +15,7 @@ export async function DELETE(request: Request) {
     }
 
     // Проверяем что все ID являются строками
-    if (!ids.every((id: any) => typeof id === "string")) {
+    if (!ids.every((id: unknown) => typeof id === "string")) {
       return NextResponse.json(
         { error: "All IDs must be strings" },
         { status: 400 }

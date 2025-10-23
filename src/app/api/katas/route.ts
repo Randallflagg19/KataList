@@ -8,7 +8,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(katas);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch katas" },
       { status: 500 }
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(kata, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to create kata" },
       { status: 500 }
