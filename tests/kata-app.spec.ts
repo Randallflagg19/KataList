@@ -61,7 +61,22 @@ test.describe("Kata App", () => {
   test("should toggle kata completion", async ({ page }) => {
     await page.goto("/");
 
-    // Находим первый чекбокс
+    // Сначала создаем кату для тестирования
+    await page.getByText("+ Добавить новую кату").click();
+
+    const timestamp = Date.now();
+    const kataTitle = `Test Kata ${timestamp}`;
+
+    await page.getByLabel("Название *").fill(kataTitle);
+    await page
+      .getByLabel("Ссылка на Codewars *")
+      .fill("https://www.codewars.com/kata/test");
+    await page.getByRole("button", { name: "Добавить" }).click();
+
+    // Ждем пока ката появится на странице
+    await expect(page.getByRole("heading", { name: kataTitle })).toBeVisible();
+
+    // Находим первый чекбокс (чекбокс "решено")
     const checkbox = page.locator('input[type="checkbox"]').first();
 
     // Проверяем что чекбокс видим
@@ -76,6 +91,25 @@ test.describe("Kata App", () => {
 
   test("should filter katas", async ({ page }) => {
     await page.goto("/");
+
+    // Создаем несколько кат для тестирования фильтрации
+    const timestamp = Date.now();
+
+    // Создаем первую кату
+    await page.getByText("+ Добавить новую кату").click();
+    await page.getByLabel("Название *").fill(`Test Kata 1 ${timestamp}`);
+    await page
+      .getByLabel("Ссылка на Codewars *")
+      .fill("https://www.codewars.com/kata/test1");
+    await page.getByRole("button", { name: "Добавить" }).click();
+
+    // Создаем вторую кату
+    await page.getByText("+ Добавить новую кату").click();
+    await page.getByLabel("Название *").fill(`Test Kata 2 ${timestamp}`);
+    await page
+      .getByLabel("Ссылка на Codewars *")
+      .fill("https://www.codewars.com/kata/test2");
+    await page.getByRole("button", { name: "Добавить" }).click();
 
     // Кликаем на фильтр "Активные"
     await page.getByRole("button", { name: /Активные/ }).click();
